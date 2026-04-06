@@ -1,0 +1,19 @@
+{
+  "name": "coin-bot_ts",
+  "version": "1.0.0",
+  "description": "Bot do telegram para notificar sobre moedas/stocks usando TypeScript.",
+  "license": "ISC",
+  "author": "Angelo",
+  "type": "module",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node build/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
