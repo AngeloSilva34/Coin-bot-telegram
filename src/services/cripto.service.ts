@@ -56,7 +56,6 @@ const getShibPrice = async (): Promise<number | undefined> => {
     try {
         const response = await fetch(`${proApiUrl}/v1/cryptocurrency/quotes/latest?id=5994`, options)
         const data = await response.json()
-        console.log('Data fetched for SHIB:', data?.data?.['5994']?.quote)
         const price = data?.data?.['5994']?.quote?.USD?.price
 
         return parseFloat(price.toFixed(11))

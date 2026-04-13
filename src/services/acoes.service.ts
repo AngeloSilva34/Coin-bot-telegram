@@ -77,19 +77,6 @@ const getUsdPrice = async (): Promise<number | undefined> => {
     }
 }
 
-const getSpxPrice = async (): Promise<number | undefined> => {
-    try {
-        const response = await fetch(`${brapiUrl}/quote/SPX`, options)
-        const data = await response.json()
-        console.log('SPX data:', data)
-        const price = data?.results?.[0]?.regularMarketPrice
-
-        return parseFloat(price.toFixed(2))
-    } catch (err) {
-        console.error('Error fetching SPX price:', err)
-    }
-}
-
 
 export {
     getPetr4Price,
@@ -98,5 +85,4 @@ export {
     getSelicRate,
     getIbovPoints,
     getUsdPrice,
-    getSpxPrice
 }

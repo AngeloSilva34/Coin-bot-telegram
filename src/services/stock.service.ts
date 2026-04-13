@@ -56,8 +56,22 @@ const getTslaPrice = async (): Promise<number | undefined> => {
     }
 }
 
+const getSpyPrice = async (): Promise<number | undefined> => {
+    const symbol = 'SPY';
+    try {
+        const response = await fetch(`${finnHubUrl}/quote?symbol=${symbol}&token=${finhubApiKey}`);
+        const data: FinnhubQuote = await response.json()
+        const price = data.c
+
+        return parseFloat(price.toFixed(2))
+    } catch (err) {
+        console.error('Error fetching SPY price:', err)
+    }
+}
+
 export {
     getNvdaPrice,
     getAaplPrice,
-    getTslaPrice
+    getTslaPrice,
+    getSpyPrice
 }
