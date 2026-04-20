@@ -1,7 +1,7 @@
 import { Context, Telegraf } from "telegraf"
-import { getBtcPrice, getEthPrice, getLtcPrice, getSolPrice, getShibPrice } from "./services/cripto.service.js"
-import { getNvdaPrice, getAaplPrice, getTslaPrice, getSpyPrice } from "./services/stock.service.js"
-import { getPetr4Price, getVale3Price, getItau4Price, getSelicRate, getIbovPoints, getUsdPrice } from "./services/acoes.service.js"
+import { getBtcPrice, getEthPrice, getLtcPrice, getSolPrice, getShibPrice } from "../services/cripto.service.js"
+import { getNvdaPrice, getAaplPrice, getTslaPrice, getSpyPrice } from "../services/stock.service.js"
+import { getPetr4Price, getVale3Price, getItau4Price, getSelicRate, getIbovPoints, getUsdPrice } from "../services/acoes.service.js"
 
 const chatCommands = (bot: Telegraf) => {
     bot.start(ctx => start(ctx))
@@ -258,10 +258,6 @@ Selecione um campo abaixo para ter mais informações sobre:
             caption: `A Ibovespa está com ${ibovPoints} pontos.`
         })
     })
-
-    bot.launch()
-        .then(() => console.log('Bot started'))
-        .catch((err: Error) => console.error('Failed to start bot:', err))
 }
 
 

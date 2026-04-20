@@ -11,6 +11,6 @@
         "rootDir": "src",
         "outDir": "build"
     },
-    "include": ["src"],
+    "include": ["src", "src/app.ts"],
     "exclude": ["node_modules"]
 }
