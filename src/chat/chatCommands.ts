@@ -1,42 +1,50 @@
 import { Context, Telegraf } from "telegraf"
-import { getBtcPrice, getEthPrice, getLtcPrice, getSolPrice, getShibPrice } from "../services/cripto.service.js"
-import { getNvdaPrice, getAaplPrice, getTslaPrice, getSpyPrice } from "../services/stock.service.js"
-import { getPetr4Price, getVale3Price, getItau4Price, getSelicRate, getIbovPoints, getUsdPrice } from "../services/acoes.service.js"
+import { getBtcPrice, getEthPrice, getLtcPrice, getSolPrice, getShibPrice } from "../services/asserts/cripto.service.js"
+import { getNvdaPrice, getAaplPrice, getTslaPrice, getSpyPrice } from "../services/asserts/stock.service.js"
+import { getPetr4Price, getVale3Price, getItau4Price, getSelicRate, getIbovPoints, getUsdPrice } from "../services/asserts/acoes.service.js"
+import { createUserService } from "../services/users/user.service.js"
 
-const chatCommands = (bot: Telegraf) => {
-    bot.start(ctx => start(ctx))
+const goBackButton = [{
+    text: 'Voltar',
+    callback_data: 'start'
+}]
 
-    const start = async (ctx: Context) => {
-        {
-            const startMessage = `
+const start = async (ctx: Context) => {
+    {
+        const firstName = ctx.from?.first_name
+        const lastName = ctx.from?.last_name || ''
+        const fullName = `${firstName} ${lastName}`.trim()
+        const telegramId = ctx.from!.id
+
+        await createUserService(telegramId, fullName)
+
+        const startMessage = `
 <b>Bem vindo ao Coins Bot!</b>
 
 Selecione um campo abaixo para ter mais informações sobre:
 `
 
-            await ctx.telegram.sendMessage(ctx.from!.id, startMessage, {
-                parse_mode: 'HTML',
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            { text: 'Mercado cripto', callback_data: 'cripto' },
-                            { text: 'Mercado americano', callback_data: 'eua' },
-                            { text: 'Mercado brasileiro', callback_data: 'bra' }
-                        ]
+        await ctx.telegram.sendMessage(ctx.from!.id, startMessage, {
+            parse_mode: 'HTML',
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: 'Mercado cripto', callback_data: 'cripto' },
+                        { text: 'Mercado americano', callback_data: 'eua' },
+                        { text: 'Mercado brasileiro', callback_data: 'bra' }
                     ]
-                }
-            })
-        }
+                ]
+            }
+        })
     }
+}
+
+const chatCommands = (bot: Telegraf) => {
+    bot.start(ctx => start(ctx))
 
     bot.help(ctx => {
         ctx.reply("Para ajuda, selecione um dos comandos abaixo:\n\n - /start : Para o início da conversa\n - /help : Para ter ajuda com os comandos")
     })
-
-    const goBackButton = [{
-        text: 'Voltar',
-        callback_data: 'start'
-    }]
 
     bot.action('start', async ctx => await start(ctx))
 

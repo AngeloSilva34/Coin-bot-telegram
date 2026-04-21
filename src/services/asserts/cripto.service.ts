@@ -1,5 +1,3 @@
-import 'dotenv/config'
-
 const proApiUrl: string = 'https://pro-api.coinmarketcap.com'
 const apiKey = process.env.CMC_PRO_API_KEY!
 const options = { method: 'GET', headers: { 'accept': 'application/json', 'X-CMC_PRO_API_KEY': apiKey } }

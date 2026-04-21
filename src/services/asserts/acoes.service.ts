@@ -1,5 +1,3 @@
-import 'dotenv/config'
-
 const brapiUrl: string = 'https://brapi.dev/api'
 const brApiKey = process.env.BRAPI_API_KEY!
 const options = { method: 'GET', headers: { 'accept': 'application/json', 'Authorization': `Bearer ${brApiKey}` } }

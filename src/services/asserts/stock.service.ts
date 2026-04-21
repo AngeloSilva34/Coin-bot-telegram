@@ -1,5 +1,3 @@
-import 'dotenv/config'
-
 interface FinnhubQuote {
     c: number;  // Preço atual (Current price)
     d: number;  // Variação (Change)
