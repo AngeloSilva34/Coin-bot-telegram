@@ -1,15 +1,15 @@
-import { Context, Telegraf } from "telegraf"
+import { Telegraf } from "telegraf"
+
 import { getBtcPrice, getEthPrice, getLtcPrice, getSolPrice, getShibPrice } from "../services/asserts/cripto.service.js"
 import { getNvdaPrice, getAaplPrice, getTslaPrice, getSpyPrice } from "../services/asserts/stock.service.js"
 import { getPetr4Price, getVale3Price, getItau4Price, getSelicRate, getIbovPoints, getUsdPrice } from "../services/asserts/acoes.service.js"
-import { createUserService } from "../services/users/user.service.js"
+import { createAlertService, createUserService } from "../services/users/user.service.js"
 
-const goBackButton = [{
-    text: 'Voltar',
-    callback_data: 'start'
-}]
+import { MyContext } from "../types.js"
+import { message } from "telegraf/filters"
 
-const start = async (ctx: Context) => {
+const goBackButton = [{ text: "Voltar ao início", callback_data: "start" }]
+const start = async (ctx: MyContext) => {
     {
         const firstName = ctx.from?.first_name
         const lastName = ctx.from?.last_name || ''
@@ -39,14 +39,34 @@ Selecione um campo abaixo para ter mais informações sobre:
     }
 }
 
-const chatCommands = (bot: Telegraf) => {
+const chatCommands = (bot: Telegraf<MyContext>) => {
     bot.start(ctx => start(ctx))
+    bot.action('start', async ctx => await start(ctx))
 
     bot.help(ctx => {
         ctx.reply("Para ajuda, selecione um dos comandos abaixo:\n\n - /start : Para o início da conversa\n - /help : Para ter ajuda com os comandos")
     })
 
-    bot.action('start', async ctx => await start(ctx))
+    bot.command('alerta', async ctx => await confirmAlert(ctx))
+    bot.action('alerta', async ctx => await confirmAlert(ctx))
+
+    bot.on(message("text"), async (ctx: MyContext) => {
+        if (!ctx.session.pendingAsset || !("text" in ctx.message!) || !ctx.from) return;
+
+        const telegramId = ctx.from.id;
+        const rawText = ctx.message.text;
+        const asset = ctx.session.pendingAsset;
+
+        const sucess = await createAlertService(asset, rawText, telegramId);
+
+        if (sucess) {
+            ctx.reply("Alerta criado com sucesso");
+        } else {
+            ctx.reply("Algo deu errado. Verifique o valor digitado novamente.");
+        }
+
+        ctx.session.pendingAsset = null;
+    });
 
     //Cripto moedas
 
@@ -74,7 +94,7 @@ const chatCommands = (bot: Telegraf) => {
                 ]
             }
         })
-    })
+    });
 
     bot.action('btc', async ctx => {
         await ctx.answerCbQuery()
@@ -83,7 +103,7 @@ const chatCommands = (bot: Telegraf) => {
         await ctx.telegram.sendPhoto(ctx.from.id, 'https://cryptologos.cc/logos/bitcoin-btc-logo.png', {
             caption: `O preço do Bitcoin é: $ ${btcPrice} dólares`
         })
-    })
+    });
 
     bot.action('eth', async ctx => {
         await ctx.answerCbQuery()
@@ -92,7 +112,7 @@ const chatCommands = (bot: Telegraf) => {
         await ctx.telegram.sendPhoto(ctx.from.id, 'https://cryptologos.cc/logos/ethereum-eth-logo.png', {
             caption: `O preço do Ethereum é: $ ${ethPrice} dólares`
         })
-    })
+    });
 
     bot.action('ltc', async ctx => {
         await ctx.answerCbQuery()
@@ -266,6 +286,118 @@ const chatCommands = (bot: Telegraf) => {
             caption: `A Ibovespa está com ${ibovPoints} pontos.`
         })
     })
+
+    //Alertas
+
+    bot.action('alertaCripto', async ctx => await createCriptoAlert(ctx))
+    bot.action('alertaUSA', async ctx => await createUsaAlert(ctx))
+    bot.action('alertaBR', async ctx => await createBrAlert(ctx))
+
+    bot.action(/^alert:(.+)$/, async ctx => await createAlert(ctx))
+}
+
+const confirmAlert = async (ctx: MyContext) => {
+    if (ctx.callbackQuery) {
+        await ctx.answerCbQuery()
+    }
+
+    await ctx.telegram.sendMessage(ctx.from?.id!, 'Selecione um tipo de ativo que deseja adicionar um alerta', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: "Criptomoedas", callback_data: "alertaCripto" }],
+                [{ text: "Ativos Americanos", callback_data: "alertaUSA" }],
+                [{ text: "Ativos Brasileiros", callback_data: "alertaBR" }],
+                goBackButton
+            ]
+        }
+    })
+
+}
+
+const createCriptoAlert = async (ctx: MyContext) => {
+    if (ctx.callbackQuery) {
+        await ctx.answerCbQuery()
+    }
+
+    await ctx.telegram.sendMessage(ctx.from?.id!, 'Selecione a Cripto que deseja adicionar um alerta', {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: 'Bitcoin', callback_data: 'alert:btc' },
+                ],
+                [
+                    { text: 'Ethereum', callback_data: 'alert:eth' },
+                    { text: 'Litecoin', callback_data: 'alert:ltc' },
+                ],
+                [
+                    { text: 'Solana', callback_data: 'alert:sol' },
+                    { text: 'Shiba Inu', callback_data: 'alert:shib' }
+                ],
+                goBackButton
+            ]
+        }
+    })
+}
+
+const createUsaAlert = async (ctx: MyContext) => {
+    if (ctx.callbackQuery) {
+        await ctx.answerCbQuery()
+    }
+
+    await ctx.telegram.sendMessage(ctx.from?.id!, 'Selecione o ativo americano que deseja adicionar um alerta', {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: 'Dólar', callback_data: 'alert:usd' },
+                ],
+                [
+                    { text: 'Nvidia', callback_data: 'alert:nvda' },
+                    { text: 'Apple', callback_data: 'alert:appl' },
+                ],
+                [
+                    { text: 'Tesla', callback_data: 'alert:tsla' },
+                    { text: 'SPY', callback_data: 'alert:spy' }
+                ],
+                goBackButton
+            ]
+        }
+    })
+}
+
+const createBrAlert = async (ctx: MyContext) => {
+    if (ctx.callbackQuery) {
+        await ctx.answerCbQuery()
+    }
+
+    await ctx.telegram.sendMessage(ctx.from?.id!, 'Selecione o ativo brasileiro que deseja adicionar um alerta', {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: 'Ibovespa', callback_data: 'alert:ibov' }
+                ],
+                [
+                    { text: 'Petrobras', callback_data: 'alert:petr4' },
+                    { text: 'Vale', callback_data: 'alert:vale3' }
+                ],
+                [
+                    { text: 'Itaú', callback_data: 'alert:itau4' },
+                    { text: 'Selic', callback_data: 'alert:selic' }
+                ],
+                goBackButton
+            ]
+        }
+    })
+}
+
+const createAlert = async (ctx: MyContext & { match: RegExpExecArray }) => {
+    ctx.answerCbQuery()
+    const ticker = ctx.match[1]
+
+    ctx.session ??= {}
+
+    ctx.session.pendingAsset = ticker
+
+    await ctx.reply('Você gostaria de ser quando atingisse qual marca? Por favor, escreva somente números.')
 }
 
 

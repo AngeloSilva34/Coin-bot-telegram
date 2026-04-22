@@ -1,8 +1,12 @@
-import { Telegraf } from "telegraf";
+import { Telegraf, session } from "telegraf";
 import { chatCommands } from "./chatCommands.js";
 import 'dotenv/config'
+import { MyContext } from "../types.js";
 
-const bot = new Telegraf(process.env.BOT_TOKEN!)
+
+const bot = new Telegraf<MyContext>(process.env.BOT_TOKEN!)
+
+bot.use(session())
 
 chatCommands(bot)
 

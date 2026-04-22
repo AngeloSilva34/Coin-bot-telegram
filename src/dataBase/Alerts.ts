@@ -1,21 +1,42 @@
-import mongoose from "mongoose";
+import {Schema, model, Document, Types} from "mongoose";
 
-const AlertsSchema = new mongoose.Schema({
+export interface iAlert extends Document {
+    user: Types.ObjectId,
+    telegramId: number,
+    asset: string,
+    value: number,
+    validity: Date,
+    createdAt: Date
+}
+
+const AlertsSchema = new Schema<iAlert>({
     user: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "User",
         required: true
     },
-    assertType: {
+    telegramId: {
+        type: Number,
+        required: true,
+        index: true
+    },
+    asset: {
         type: String,
         required: true
     },
-    assertValue: {
+    value: {
         type: Number,
         required: true
+    },
+    validity: {
+        type: Date,
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
 })
 
-const Alerts = mongoose.model("Alerts", AlertsSchema)
+const Alerts = model("Alerts", AlertsSchema)
 
 export default Alerts
