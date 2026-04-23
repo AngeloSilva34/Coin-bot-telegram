@@ -51,21 +51,45 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
     bot.action('alerta', async ctx => await confirmAlert(ctx))
 
     bot.on(message("text"), async (ctx: MyContext) => {
-        if (!ctx.session.pendingAsset || !("text" in ctx.message!) || !ctx.from) return;
+        const alert = ctx.session.pendingAsset
+        if (!alert?.stage || !("text" in ctx.message!) || !ctx.from) return;
 
         const telegramId = ctx.from.id;
-        const rawText = ctx.message.text;
-        const asset = ctx.session.pendingAsset;
 
-        const sucess = await createAlertService(asset, rawText, telegramId);
+        if (alert.stage === 'waitingPrice') {
+            const rawText = ctx.message.text;
 
-        if (sucess) {
-            ctx.reply("Alerta criado com sucesso");
-        } else {
-            ctx.reply("Algo deu errado. Verifique o valor digitado novamente.");
+            const formatedPrice = rawText.replace(",", ".")
+            const price = Number(formatedPrice)
+
+            if (isNaN(price) || !isFinite(price) || price <= 0) {
+                return ctx.reply("Digite somente números")
+            }
+
+            alert.price = price
+            alert.stage = 'waitingDays'
+            return ctx.reply('Agora, por quantos dias esse alerta deve durar? (Ex: 7, 30, 90)')
         }
 
-        ctx.session.pendingAsset = null;
+        if (alert.stage === 'waitingDays') {
+            const stringDays = ctx.message.text;
+            const days = parseFloat(stringDays)
+
+            if (isNaN(days) || !isFinite(days) || days <= 0 || days >= 365) {
+                return ctx.reply("Digite somente números");
+            }
+
+            const creatingAlert = await createAlertService(alert.asset!, alert.price!, telegramId, days);
+
+            if (creatingAlert) {
+                ctx.session.pendingAsset = {};
+
+                return ctx.reply(creatingAlert);
+
+            } else {
+                return ctx.reply("Algo deu errado. Verifique o valor digitado novamente.");
+            }
+        }
     });
 
     //Cripto moedas
@@ -394,10 +418,12 @@ const createAlert = async (ctx: MyContext & { match: RegExpExecArray }) => {
     const ticker = ctx.match[1]
 
     ctx.session ??= {}
+    ctx.session.pendingAsset = {
+        asset: ticker,
+        stage: 'waitingPrice'
+    }
 
-    ctx.session.pendingAsset = ticker
-
-    await ctx.reply('Você gostaria de ser quando atingisse qual marca? Por favor, escreva somente números.')
+    await ctx.reply('Você gostaria de ser avisado quando atingisse qual marca? (Escreva somente números)')
 }
 
 

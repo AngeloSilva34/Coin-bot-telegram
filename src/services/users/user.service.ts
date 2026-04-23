@@ -1,4 +1,5 @@
-import { createUserRepositories, findUserRepositories, createAlertRepositories } from "../../repositories/user.repositories.js"
+import { createUserRepositories, findUserRepositories } from "../../repositories/user.repositories.js"
+import { createAlertRepositories, findAlertRepositories } from "../../repositories/alert.repositories.js"
 
 const createUserService = async (telegramId: number, fullName: string): Promise<void> => {
     try {
@@ -12,26 +13,25 @@ const createUserService = async (telegramId: number, fullName: string): Promise<
     }
 }
 
-const createAlertService = async (assert: string, rawText: string, telegramId: number) => {
-    const formatedPrice = rawText.replace(",", ".")
-    const price = Number(formatedPrice)
-
-    if (isNaN(price) || !isFinite(price) || price <= 0) {
-        return false
-    }
-
+const createAlertService = async (asset: string, price: number, telegramId: number, days: number): Promise<string | undefined> => {
     const validity = new Date()
-    validity.setDate(validity.getDate() + 30)
+    validity.setDate(validity.getDate() + days)
 
     try {
         const user = await findUserRepositories(telegramId)
         if (!user) {
-            return false
+            return 'Algo deu errado, tente selecionar /start novamente'
         }
         const userId = user._id
 
-        await createAlertRepositories(assert, price, telegramId, userId, validity)
-        return true
+        const alert = await findAlertRepositories(telegramId, asset)
+
+        if(alert && alert.length >= 2) {
+            return 'Você só pode criar 2 alertar para cada ativo.'
+        }
+
+        await createAlertRepositories(asset, price, telegramId, userId, validity)
+        return 'Alerta criado com sucesso'
 
     } catch (err) {
         console.error("Error trying to save alert price", err)
