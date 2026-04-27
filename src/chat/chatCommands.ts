@@ -1,4 +1,5 @@
 import { Telegraf } from "telegraf"
+import { message } from "telegraf/filters"
 
 import { getCoinPrice } from "../services/assets/cripto.service.js"
 import { getStockPrice } from "../services/assets/stock.service.js"
@@ -6,9 +7,9 @@ import { getBrapiPrice } from "../services/assets/acoes.service.js"
 import { createAlertService, createUserService } from "../services/users/user.service.js"
 
 import { MyContext } from "../types.js"
-import { message } from "telegraf/filters"
 
 const goBackButton = [{ text: "Voltar ao início", callback_data: "start" }]
+
 const start = async (ctx: MyContext) => {
     {
         const firstName = ctx.from?.first_name
@@ -21,18 +22,16 @@ const start = async (ctx: MyContext) => {
         const startMessage = `
 <b>Bem vindo ao Coins Bot!</b>
 
-Selecione um campo abaixo para ter mais informações sobre:
+Selecione um campo abaixo para ter mais informações sobre 👇
 `
 
         await ctx.telegram.sendMessage(ctx.from!.id, startMessage, {
             parse_mode: 'HTML',
             reply_markup: {
                 inline_keyboard: [
-                    [
-                        { text: 'Mercado cripto', callback_data: 'cripto' },
-                        { text: 'Mercado americano', callback_data: 'eua' },
-                        { text: 'Mercado brasileiro', callback_data: 'bra' }
-                    ]
+                    [{ text: 'Mercado cripto ₿', callback_data: 'cripto' }],
+                    [{ text: 'Mercado americano US$', callback_data: 'eua' }],
+                    [{ text: 'Mercado brasileiro R$', callback_data: 'bra' }]
                 ]
             }
         })
@@ -44,15 +43,15 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
     bot.action('start', async ctx => await start(ctx))
 
     bot.help(ctx => {
-        ctx.reply("Para ajuda, selecione um dos comandos abaixo:\n\n - /start : Para o início da conversa\n - /help : Para ter ajuda com os comandos")
+        ctx.reply("Para ajuda, selecione um dos comandos abaixo:\n\n - /start : Para o início da conversa\n - /help : Para ter ajuda com os comandos\n - /alerta : Criar um novo alerta")
     })
 
     bot.command('alerta', async ctx => await confirmAlert(ctx))
     bot.action('alerta', async ctx => await confirmAlert(ctx))
 
     bot.on(message("text"), async (ctx: MyContext) => {
-        const alert = ctx.session.pendingAsset
-        if (!alert?.stage || !("text" in ctx.message!) || !ctx.from) return;
+        const alert = ctx.session?.pendingAsset
+        if (!alert || !alert?.stage || !("text" in ctx.message!) || !ctx.from) return;
 
         const telegramId = ctx.from.id;
 
@@ -184,9 +183,16 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
 
     //Alertas
 
-    bot.action('alertaCripto', async ctx => await createCriptoAlert(ctx))
-    bot.action('alertaUSA', async ctx => await createUsaAlert(ctx))
-    bot.action('alertaBR', async ctx => await createBrAlert(ctx))
+    bot.action(/^selectAlert:(.+)$/, async (ctx: MyContext & { match: RegExpExecArray }) => {
+        await ctx.answerCbQuery()
+
+        const typeAlert = ctx.match[1]
+        if (typeAlert === "cripto") {
+            await createCriptoAlert(ctx)
+        } else if (typeAlert === "USA") {
+            await createUsaAlert(ctx)
+        } else await createBrAlert(ctx)
+    })
 
     bot.action(/^alert:(.+)$/, async ctx => await createAlert(ctx))
 }
@@ -199,14 +205,13 @@ const confirmAlert = async (ctx: MyContext) => {
     await ctx.telegram.sendMessage(ctx.from?.id!, 'Selecione um tipo de ativo que deseja adicionar um alerta', {
         reply_markup: {
             inline_keyboard: [
-                [{ text: "Criptomoedas", callback_data: "alertaCripto" }],
-                [{ text: "Ativos Americanos", callback_data: "alertaUSA" }],
-                [{ text: "Ativos Brasileiros", callback_data: "alertaBR" }],
+                [{ text: "Criptomoedas", callback_data: "selectAlert:cripto" }],
+                [{ text: "Ativos Americanos", callback_data: "selectAlert:USA" }],
+                [{ text: "Ativos Brasileiros", callback_data: "selectAlert:BR" }],
                 goBackButton
             ]
         }
     })
-
 }
 
 const createCriptoAlert = async (ctx: MyContext) => {
@@ -218,15 +223,15 @@ const createCriptoAlert = async (ctx: MyContext) => {
         reply_markup: {
             inline_keyboard: [
                 [
-                    { text: 'Bitcoin', callback_data: 'alert:btc' },
+                    { text: 'Bitcoin', callback_data: 'alert:Bitcoin' },
                 ],
                 [
-                    { text: 'Ethereum', callback_data: 'alert:eth' },
-                    { text: 'Litecoin', callback_data: 'alert:ltc' },
+                    { text: 'Ethereum', callback_data: 'alert:Ethereum' },
+                    { text: 'Litecoin', callback_data: 'alert:Litecoin' },
                 ],
                 [
-                    { text: 'Solana', callback_data: 'alert:sol' },
-                    { text: 'Shiba Inu', callback_data: 'alert:shib' }
+                    { text: 'Solana', callback_data: 'alert:Solana' },
+                    { text: 'Shiba Inu', callback_data: 'alert:Shiba' }
                 ],
                 goBackButton
             ]
@@ -243,15 +248,15 @@ const createUsaAlert = async (ctx: MyContext) => {
         reply_markup: {
             inline_keyboard: [
                 [
-                    { text: 'Dólar', callback_data: 'alert:usd' },
+                    { text: 'Dólar', callback_data: 'alert:Dólar' },
                 ],
                 [
-                    { text: 'Nvidia', callback_data: 'alert:nvda' },
-                    { text: 'Apple', callback_data: 'alert:appl' },
+                    { text: 'Nvidia', callback_data: 'alert:Nvidia' },
+                    { text: 'Apple', callback_data: 'alert:Apple' },
                 ],
                 [
-                    { text: 'Tesla', callback_data: 'alert:tsla' },
-                    { text: 'SPY', callback_data: 'alert:spy' }
+                    { text: 'Tesla', callback_data: 'alert:Tesla' },
+                    { text: 'SPY', callback_data: 'alert:SPY' }
                 ],
                 goBackButton
             ]
@@ -268,15 +273,15 @@ const createBrAlert = async (ctx: MyContext) => {
         reply_markup: {
             inline_keyboard: [
                 [
-                    { text: 'Ibovespa', callback_data: 'alert:ibov' }
+                    { text: 'Ibovespa', callback_data: 'alert:Ibovespa' }
                 ],
                 [
-                    { text: 'Petrobras', callback_data: 'alert:petr4' },
-                    { text: 'Vale', callback_data: 'alert:vale3' }
+                    { text: 'Petrobras', callback_data: 'alert:Petrobras' },
+                    { text: 'Vale', callback_data: 'alert:Vale' }
                 ],
                 [
-                    { text: 'Itaú', callback_data: 'alert:itau4' },
-                    { text: 'Selic', callback_data: 'alert:selic' }
+                    { text: 'Itaú', callback_data: 'alert:Itaú' },
+                    { text: 'Selic', callback_data: 'alert:Selic' }
                 ],
                 goBackButton
             ]
@@ -285,7 +290,7 @@ const createBrAlert = async (ctx: MyContext) => {
 }
 
 const createAlert = async (ctx: MyContext & { match: RegExpExecArray }) => {
-    ctx.answerCbQuery()
+    await ctx.answerCbQuery()
     const ticker = ctx.match[1]
 
     ctx.session ??= {}
@@ -294,7 +299,36 @@ const createAlert = async (ctx: MyContext & { match: RegExpExecArray }) => {
         stage: 'waitingPrice'
     }
 
-    await ctx.reply('Você gostaria de ser avisado quando atingisse qual marca? (Escreva somente números)')
+    let phrase = ''
+
+    if (["Bitcoin", "Ethereum", "Litecoin", "Solana", "Shiba"].includes(ticker)) {
+        const price = await getCoinPrice(ticker)
+        phrase = `O valor da cripto ${ticker} está em ${price} dólares atualmente.`
+
+    } else if (["Nvidia", "Apple", "Tesla", "SPY"].includes(ticker)) {
+        const price = await getStockPrice(ticker)
+
+        if (ticker === "SPY") {
+            phrase = `O ETF SPY está a ${price} dólares atualmente`
+        } else {
+            phrase = `O valor da ação da ${ticker} esta a ${price} dólares atualmente`
+        }
+
+    } else if (["Dólar", "Ibovespa", "Petrobras", "Vale", "Itaú", "Selic"].includes(ticker)) {
+        const price = await getBrapiPrice(ticker)
+
+        if (ticker === "Selic") {
+            phrase = `A taxa Selic está em ${price}% atualmente`
+        } else if (ticker === "Ibovespa") {
+            phrase = `A Ibovespa está com ${price} pontos atualmente`
+        } else {
+            phrase = `${ticker === 'Dólar' || ticker === 'Itaú' ? 'O' : 'A'} ${ticker} está valendo ${price} reais atualmente`
+        }
+    } else {
+        return await ctx.reply('Não foi possível identificar o ativo. Por favor tente novamente mais tarde.')
+    }
+
+    await ctx.reply(`${phrase}. \n\n Você gostaria de ser avisado quando atingisse qual marca? \n\n (Escreva somente números)`)
 }
 
 const handleCriptoPrice = async (ctx: MyContext & { match: RegExpExecArray }) => {
@@ -311,12 +345,12 @@ const handleCriptoPrice = async (ctx: MyContext & { match: RegExpExecArray }) =>
     }
 
     const photo = urlPhoto[asset]
-
     const price = await getCoinPrice(asset)
+
     if (!price) return await ctx.reply(`Não foi possível conseguir o preço da moeda ${asset}. Tente novamente em alguns minutos`)
 
     return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
-        caption: `O ${asset} está a ${price} doláres`
+        caption: `O ${asset} está a ${price} dólares`
     })
 }
 
@@ -333,10 +367,9 @@ const handleStockPrice = async (ctx: MyContext & { match: RegExpExecArray }) => 
     }
 
     const photo = urlPhoto[asset]
-
     const price = await getStockPrice(asset)
-    if (!price) return await ctx.reply(`Não foi possível conseguir o preço da ${asset}. Tente novamente em alguns minutos`)
 
+    if (!price) return await ctx.reply(`Não foi possível conseguir o preço da ${asset}. Tente novamente em alguns minutos`)
     if (asset === 'SPY') {
         return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
             caption: `O ETF SPY está valendo ${price} dólares`
@@ -363,16 +396,14 @@ const handleBrapiPrice = async (ctx: MyContext & { match: RegExpExecArray }) => 
     }
 
     const photo = urlPhoto[asset]
-
     const price = await getBrapiPrice(asset)
-    if (!price) return await ctx.reply(`Não foi possível conseguir informações sobre ${asset}. Tente novamente em alguns minutos`)
 
+    if (!price) return await ctx.reply(`Não foi possível conseguir informações sobre ${asset}. Tente novamente em alguns minutos`)
     if (asset === 'Selic') {
         return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
             caption: `A taxa Selic está em ${price}%`
         })
     }
-
     if (asset === 'Ibovespa') {
         return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
             caption: `A Ibovespa está com ${price} pontos`
@@ -380,10 +411,9 @@ const handleBrapiPrice = async (ctx: MyContext & { match: RegExpExecArray }) => 
     }
 
     return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
-        caption: `${asset === 'Dólar' || 'Itaú' ? 'O' : 'A'} ${asset} está valendo ${price} reais`
+        caption: `${asset === 'Dólar' || asset === 'Itaú' ? 'O' : 'A'} ${asset} está valendo ${price} reais`
     })
 }
-
 
 
 export { chatCommands }
