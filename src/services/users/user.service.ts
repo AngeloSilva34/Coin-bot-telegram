@@ -13,7 +13,7 @@ const createUserService = async (telegramId: number, fullName: string): Promise<
     }
 }
 
-const createAlertService = async (asset: string, price: number, telegramId: number, days: number): Promise<string | undefined> => {
+const createAlertService = async (asset: string, targetPrice: number, telegramId: number, days: number, actualPrice: number): Promise<string | undefined> => {
     const validity = new Date()
     validity.setDate(validity.getDate() + days)
 
@@ -26,11 +26,13 @@ const createAlertService = async (asset: string, price: number, telegramId: numb
 
         const alert = await findAlertRepositories(telegramId, asset)
 
-        if(alert && alert.length >= 2) {
+        if (alert && alert.length >= 2) {
             return 'Você só pode criar 2 alertar para cada ativo.'
         }
 
-        await createAlertRepositories(asset, price, telegramId, userId, validity)
+        const isUpper = targetPrice > actualPrice
+
+        await createAlertRepositories(asset, targetPrice, telegramId, userId, validity, actualPrice, isUpper)
         return 'Alerta criado com sucesso'
 
     } catch (err) {

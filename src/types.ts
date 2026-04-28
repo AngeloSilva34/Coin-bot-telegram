@@ -4,6 +4,7 @@ interface MySession {
   pendingAsset?: {
     asset?: string,
     price?: number,
+    targetPrice?: number,
     stage?: 'waitingPrice' | 'waitingDays'
   };
 }

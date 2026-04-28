@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import Alerts, { iAlert } from "../dataBase/Alerts.js";
 
-const createAlertRepositories = async (asset: string, value: number, telegramId: number, user: Types.ObjectId, validity: Date): Promise<iAlert | null> => Alerts.create({ user, telegramId, asset, value, validity })
+const createAlertRepositories = async (asset: string, targetPrice: number, telegramId: number, user: Types.ObjectId, validity: Date, innitialPrice: number, isUpper: boolean): Promise<iAlert | null> => Alerts.create({ user, telegramId, asset, targetPrice, innitialPrice, isUpper, validity })
 
 const findAlertRepositories = async (telegramId: number, asset?: string): Promise<iAlert[] > => {
     if (asset) {

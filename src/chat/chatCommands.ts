@@ -7,8 +7,7 @@ import { getBrapiPrice } from "../services/assets/acoes.service.js"
 import { createAlertService, createUserService } from "../services/users/user.service.js"
 
 import { MyContext } from "../types.js"
-
-const goBackButton = [{ text: "Voltar ao início", callback_data: "start" }]
+import { errorMessage, goBackButton } from "./components.js"
 
 const start = async (ctx: MyContext) => {
     {
@@ -34,7 +33,7 @@ Selecione um campo abaixo para ter mais informações sobre 👇
                     [{ text: 'Mercado brasileiro R$', callback_data: 'bra' }]
                 ]
             }
-        })
+        }).catch((err: Error) => errorMessage(err, ctx))
     }
 }
 
@@ -65,7 +64,7 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
                 return ctx.reply("Digite somente números")
             }
 
-            alert.price = price
+            alert.targetPrice = price
             alert.stage = 'waitingDays'
             return ctx.reply('Agora, por quantos dias esse alerta deve durar? (Ex: 7, 30, 90)')
         }
@@ -78,7 +77,7 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
                 return ctx.reply("Digite somente números");
             }
 
-            const creatingAlert = await createAlertService(alert.asset!, alert.price!, telegramId, days);
+            const creatingAlert = await createAlertService(alert.asset!, alert.targetPrice!, telegramId, days, alert.price!);
 
             if (creatingAlert) {
                 ctx.session.pendingAsset = {};
@@ -116,7 +115,7 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
                     goBackButton
                 ]
             }
-        })
+        }).catch((err: Error) => errorMessage(err, ctx))
     });
 
     bot.action(/^crpt:(.+)$/, async ctx => await handleCriptoPrice(ctx));
@@ -146,7 +145,7 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
                     goBackButton
                 ]
             }
-        })
+        }).catch((err: Error) => errorMessage(err, ctx))
     })
 
     bot.action(/^stock:(.+)$/, async ctx => await handleStockPrice(ctx))
@@ -176,7 +175,7 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
                     goBackButton
                 ]
             }
-        })
+        }).catch((err: Error) => errorMessage(err, ctx))
     })
 
     bot.action(/^brapi:(.+)$/, async ctx => await handleBrapiPrice(ctx))
@@ -211,7 +210,7 @@ const confirmAlert = async (ctx: MyContext) => {
                 goBackButton
             ]
         }
-    })
+    }).catch((err: Error) => errorMessage(err, ctx))
 }
 
 const createCriptoAlert = async (ctx: MyContext) => {
@@ -236,7 +235,7 @@ const createCriptoAlert = async (ctx: MyContext) => {
                 goBackButton
             ]
         }
-    })
+    }).catch((err: Error) => errorMessage(err, ctx))
 }
 
 const createUsaAlert = async (ctx: MyContext) => {
@@ -261,7 +260,7 @@ const createUsaAlert = async (ctx: MyContext) => {
                 goBackButton
             ]
         }
-    })
+    }).catch((err: Error) => errorMessage(err, ctx))
 }
 
 const createBrAlert = async (ctx: MyContext) => {
@@ -286,27 +285,22 @@ const createBrAlert = async (ctx: MyContext) => {
                 goBackButton
             ]
         }
-    })
+    }).catch((err: Error) => errorMessage(err, ctx))
 }
 
 const createAlert = async (ctx: MyContext & { match: RegExpExecArray }) => {
     await ctx.answerCbQuery()
     const ticker = ctx.match[1]
 
-    ctx.session ??= {}
-    ctx.session.pendingAsset = {
-        asset: ticker,
-        stage: 'waitingPrice'
-    }
-
     let phrase = ''
+    let price
 
     if (["Bitcoin", "Ethereum", "Litecoin", "Solana", "Shiba"].includes(ticker)) {
-        const price = await getCoinPrice(ticker)
+        price = await getCoinPrice(ticker)
         phrase = `O valor da cripto ${ticker} está em ${price} dólares atualmente.`
 
     } else if (["Nvidia", "Apple", "Tesla", "SPY"].includes(ticker)) {
-        const price = await getStockPrice(ticker)
+        price = await getStockPrice(ticker)
 
         if (ticker === "SPY") {
             phrase = `O ETF SPY está a ${price} dólares atualmente`
@@ -315,7 +309,7 @@ const createAlert = async (ctx: MyContext & { match: RegExpExecArray }) => {
         }
 
     } else if (["Dólar", "Ibovespa", "Petrobras", "Vale", "Itaú", "Selic"].includes(ticker)) {
-        const price = await getBrapiPrice(ticker)
+        price = await getBrapiPrice(ticker)
 
         if (ticker === "Selic") {
             phrase = `A taxa Selic está em ${price}% atualmente`
@@ -326,6 +320,17 @@ const createAlert = async (ctx: MyContext & { match: RegExpExecArray }) => {
         }
     } else {
         return await ctx.reply('Não foi possível identificar o ativo. Por favor tente novamente mais tarde.')
+    }
+
+    if (typeof price !== 'number') {
+        return ctx.reply("Algo deu errado. Tente novamente mais tarde")
+    }
+
+    ctx.session ??= {}
+    ctx.session.pendingAsset = {
+        asset: ticker,
+        stage: 'waitingPrice',
+        price: price
     }
 
     await ctx.reply(`${phrase}. \n\n Você gostaria de ser avisado quando atingisse qual marca? \n\n (Escreva somente números)`)
@@ -351,7 +356,7 @@ const handleCriptoPrice = async (ctx: MyContext & { match: RegExpExecArray }) =>
 
     return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
         caption: `O ${asset} está a ${price} dólares`
-    })
+    }).catch((err: Error) => errorMessage(err, ctx))
 }
 
 const handleStockPrice = async (ctx: MyContext & { match: RegExpExecArray }) => {
@@ -373,12 +378,12 @@ const handleStockPrice = async (ctx: MyContext & { match: RegExpExecArray }) => 
     if (asset === 'SPY') {
         return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
             caption: `O ETF SPY está valendo ${price} dólares`
-        })
+        }).catch((err: Error) => errorMessage(err, ctx))
     }
 
     return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
         caption: `A ação da ${asset} está valendo ${price} dólares`
-    })
+    }).catch((err: Error) => errorMessage(err, ctx))
 }
 
 const handleBrapiPrice = async (ctx: MyContext & { match: RegExpExecArray }) => {
@@ -402,17 +407,17 @@ const handleBrapiPrice = async (ctx: MyContext & { match: RegExpExecArray }) => 
     if (asset === 'Selic') {
         return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
             caption: `A taxa Selic está em ${price}%`
-        })
+        }).catch((err: Error) => errorMessage(err, ctx))
     }
     if (asset === 'Ibovespa') {
         return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
             caption: `A Ibovespa está com ${price} pontos`
-        })
+        }).catch((err: Error) => errorMessage(err, ctx))
     }
 
     return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
         caption: `${asset === 'Dólar' || asset === 'Itaú' ? 'O' : 'A'} ${asset} está valendo ${price} reais`
-    })
+    }).catch((err: Error) => errorMessage(err, ctx))
 }
 
 

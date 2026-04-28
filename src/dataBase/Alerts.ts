@@ -1,10 +1,12 @@
-import {Schema, model, Document, Types} from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
 export interface iAlert extends Document {
     user: Types.ObjectId,
     telegramId: number,
     asset: string,
-    value: number,
+    innitialPrice: number,
+    targetPrice: number,
+    isUpper: boolean,
     validity: Date,
     createdAt: Date
 }
@@ -24,8 +26,16 @@ const AlertsSchema = new Schema<iAlert>({
         type: String,
         required: true
     },
-    value: {
+    innitialPrice: {
         type: Number,
+        required: true
+    },
+    targetPrice: {
+        type: Number,
+        required: true
+    },
+    isUpper: {
+        type: Boolean,
         required: true
     },
     validity: {
