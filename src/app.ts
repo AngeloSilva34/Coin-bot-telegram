@@ -6,7 +6,11 @@ import { bot } from './chat/chatIndex.js'
 
 const app = express()
 
-//app.use(bot.webhookCallback())
+const secretPath = `/webhook/${process.env.SHA256HASH_PATH}`
+
+app.use(bot.webhookCallback(secretPath))
+app.use(express.json())
+
 connectDB()
 
-export {app, bot}
+export {app, bot, secretPath}
