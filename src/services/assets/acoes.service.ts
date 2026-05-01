@@ -42,7 +42,29 @@ const getBrapiPrice = async (asset: string): Promise<number | undefined> => {
     }
 }
 
+const getAllBrapiPrice = async () => {
+
+    const [Dólar, Selic, Ibovespa, Petrobras, Vale, Itaú] = await Promise.all([
+        getBrapiPrice('Dólar'),
+        getBrapiPrice('Selic'),
+        getBrapiPrice('Ibovespa'),
+        getBrapiPrice('Petrobras'),
+        getBrapiPrice('Vale'),
+        getBrapiPrice('Itaú')
+    ])
+
+    return {
+        Dólar,
+        Ibovespa,
+        Petrobras,
+        Vale,
+        Itaú,
+        Selic
+    }
+}
+
 
 export {
-    getBrapiPrice
+    getBrapiPrice,
+    getAllBrapiPrice
 }

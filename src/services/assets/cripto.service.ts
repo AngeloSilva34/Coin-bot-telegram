@@ -30,6 +30,24 @@ const getCoinPrice = async (asset: string): Promise<number | undefined> => {
     }
 }
 
+const getAllCoinPrice = async () => {
+    const [Bitcoin, Ethereum, Litecoin, Solana, Shiba] = await Promise.all([
+        getCoinPrice('Bitcoin'),
+        getCoinPrice('Ethereum'),
+        getCoinPrice('Litecoin'),
+        getCoinPrice('Solana'),
+        getCoinPrice('Shiba')
+    ])
+    return {
+        Bitcoin,
+        Ethereum,
+        Litecoin,
+        Solana,
+        Shiba
+    }
+}
+
 export {
-    getCoinPrice
+    getCoinPrice,
+    getAllCoinPrice
 }

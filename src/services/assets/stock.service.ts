@@ -30,6 +30,23 @@ const getStockPrice = async (asset: string): Promise<number | undefined> => {
     }
 }
 
+const getAllStockPrice = async () => {
+    const [Nvidia, Apple, Tesla, SPY] = await Promise.all([
+        getStockPrice('Nvidia'),
+        getStockPrice('Apple'),
+        getStockPrice('Tesla'),
+        getStockPrice('SPY')
+    ])
+
+    return {
+        Nvidia,
+        Apple,
+        Tesla,
+        SPY
+    }
+}
+
 export {
-    getStockPrice
+    getStockPrice,
+    getAllStockPrice
 }
