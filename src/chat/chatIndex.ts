@@ -9,7 +9,8 @@ const bot = new Telegraf<MyContext>(process.env.BOT_TOKEN!)
 bot.telegram.setMyCommands([
     { command: 'start', description: 'Início do bot' },
     { command: 'help', description: 'Ver comandos disponíveis' },
-    { command: 'alerta', description: 'Criar um novo alerta' }
+    { command: 'alerta', description: 'Criar um novo alerta' },
+    { command: 'resumo', description: 'Resumo de todos os ativos e índices' }
 ]);
 
 bot.use(session())

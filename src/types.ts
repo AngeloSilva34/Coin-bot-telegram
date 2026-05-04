@@ -9,6 +9,15 @@ interface MySession {
   };
 }
 
-export interface MyContext extends Context {
+type PriceMap = {
+  [key: string]: number | undefined
+}
+
+interface MyContext extends Context {
   session: MySession;
+}
+
+export {
+  PriceMap,
+  MyContext,
 }

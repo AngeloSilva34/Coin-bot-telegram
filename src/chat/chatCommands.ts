@@ -1,12 +1,12 @@
 import { Telegraf } from "telegraf"
 import { message } from "telegraf/filters"
 
-import { getCoinPrice } from "../services/assets/cripto.service.js"
-import { getStockPrice } from "../services/assets/stock.service.js"
-import { getBrapiPrice } from "../services/assets/acoes.service.js"
+import { getAllCoinPrice, getCoinPrice } from "../services/assets/cripto.service.js"
+import { getAllStockPrice, getStockPrice } from "../services/assets/stock.service.js"
+import { getAllBrapiPrice, getBrapiPrice } from "../services/assets/acoes.service.js"
 import { createAlertService, createUserService } from "../services/users/user.service.js"
 
-import { MyContext } from "../types.js"
+import { MyContext, PriceMap } from "../types.js"
 import { errorMessage, goBackButton } from "./components.js"
 
 const start = async (ctx: MyContext) => {
@@ -42,11 +42,19 @@ const chatCommands = (bot: Telegraf<MyContext>) => {
     bot.action('start', async ctx => await start(ctx))
 
     bot.help(ctx => {
-        ctx.reply("Para ajuda, selecione um dos comandos abaixo:\n\n - /start : Para o início da conversa\n - /help : Para ter ajuda com os comandos\n - /alerta : Criar um novo alerta")
+        ctx.reply(`Para ajuda, selecione um dos comandos abaixo:
+- /start : Para o início da conversa
+- /help : Para ter ajuda com os comandos
+- /alerta : Criar um novo alerta
+- /resumo : Resumo de todos os ativos e índices
+            `)
     })
 
     bot.command('alerta', async ctx => await confirmAlert(ctx))
     bot.action('alerta', async ctx => await confirmAlert(ctx))
+
+    bot.command('resumo', async ctx => await handleResume(ctx))
+    bot.action('resumo', async ctx => await handleResume(ctx))
 
     bot.on(message("text"), async (ctx: MyContext) => {
         const alert = ctx.session?.pendingAsset
@@ -418,6 +426,47 @@ const handleBrapiPrice = async (ctx: MyContext & { match: RegExpExecArray }) => 
     return await ctx.telegram.sendPhoto(ctx.from.id, photo, {
         caption: `${asset === 'Dólar' || asset === 'Itaú' ? 'O' : 'A'} ${asset} está valendo ${price} reais`
     }).catch((err: Error) => errorMessage(err, ctx))
+}
+
+const handleResume = async (ctx: MyContext) => {
+    const getAllPrices = async (): Promise<PriceMap> => {
+        const [brapiPrices, coinsPrices, stockPrices] = await Promise.all([
+            getAllBrapiPrice(),
+            getAllCoinPrice(),
+            getAllStockPrice()
+        ])
+
+        return {
+            ...brapiPrices,
+            ...coinsPrices,
+            ...stockPrices
+        }
+    }
+
+    const allPrices = await getAllPrices()
+
+    const resumeMessage = ` <b> 📊Este é um resumo dos ativos: </b>
+    
+Bitcoin(BTC): $ ${allPrices.Bitcoin}
+Ethereum(ETH): $ ${allPrices.Ethereum}
+Litecoin(LTC): $ ${allPrices.Litecoin}
+Solana(SOL): $ ${allPrices.Solana}
+Shiba(Shib): $ ${allPrices.Shiba}
+
+Dólar(USD): R$ ${allPrices.Dólar}
+Nvidia(NVDA): $ ${allPrices.Nvidia}
+Apple(APPL): $ ${allPrices.Apple}
+Tesla(TSLA): $ ${allPrices.Tesla}
+SPY: $ ${allPrices.SPY}
+
+Ibovespa(Ibov): ${allPrices.Ibovespa} pontos
+Petrobras(Petr4): R$ ${allPrices.Petrobras}
+Vale(Vale3): R$ ${allPrices.Vale}
+Itaú(Itub4): R$ ${allPrices.Itaú}
+Selic: ${allPrices.Selic}%
+    `
+
+    await ctx.replyWithHTML(resumeMessage)
 }
 
 

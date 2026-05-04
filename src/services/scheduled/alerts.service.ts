@@ -5,10 +5,7 @@ import { sendExpiredAlertMessage, sendPassedMessage } from "../../chat/messages.
 import { getAllBrapiPrice } from "../assets/acoes.service.js";
 import { getAllCoinPrice } from "../assets/cripto.service.js";
 import { getAllStockPrice } from "../assets/stock.service.js";
-
-type PriceMap = {
-    [key: string]: number | undefined
-}
+import { PriceMap } from "../../types.js";
 
 export const verifyAlerts = (): void => {
     cron.schedule('0 11,17,23 * * *', async (): Promise<void> => {
@@ -56,7 +53,6 @@ export const verifyAlerts = (): void => {
                 }
                 const allPrices = await getAllPrices()
 
-
                 const allAlerts = await Alerts.find({
                     validity: { $gte: now }
                 })
@@ -79,8 +75,6 @@ export const verifyAlerts = (): void => {
             } catch (err) {
                 console.error('Error trying to send alert message: ', err)
             }
-
-
         } catch (err) {
             console.error('Error in expiration cron: ', err)
         }
